@@ -1,94 +1,84 @@
-<!DOCTYPE html>
 <?php
-// this determines if the variable were declared once you submit
-if(isset($_POST["submit"])) {     
-    $file = $_FILES['fileToUpload'];
-    $fileName = $_FILES['fileToUpload']['name'];
-    $fileTmpName = $_FILES['fileToUpload']['tmp_name'];
-    $fileError = $_FILES['fileToUpload']['error'];
-    $fileType = $_FILES['fileToUpload']['type']; // Obtain the extension of the file/image
-    $document_root = $_SERVER['DOCUMENT_ROOT'];
+$tmp_name = "temp"; 
+$name = $_POST['photoName'];
+$date = $_POST['dateTaken'];
+$photographer = $_POST['photographer'];
+$location = $_POST['location'];
+$choice = $_GET['choice']; 
+$filename = $_FILES["fileToUpload"]["name"];
+$imgType = $_FILES["fileToUpload"]["type"];
+$errorImg = False;
 
-    // Error
-    if($fileError > 0){ 
-        echo 'Problem: '.$fileError;
-        exit;
-    } 
-    
-    // Checks if the file extension is correct
-    if($fileType != 'image/jpeg' && $fileType != 'image/png' && $fileType != 'image/gif' && $fileType != 'image/jpg'){
-        echo 'Problem: file is not a PNG, JPEG, GIF, or JPG: ';
-        exit;
-    } 
-     $uploaded_file = 'uploads/'.$fileName;
-
-     if(is_uploaded_file($fileTmpName)){
-         if(!move_uploaded_file($fileTmpName,$uploaded_file)){
-             echo 'Problem: Could not move file to destination directory';
-             exit;
-         }
-    }
-    else {
-        echo 'Problem: Possible file upload attack. Filename: '. $fileName;
-        exit;
-    }
-    ?>
-
-    <?php
-    //Save meta data and name of image file to gallery.txt
-    $fp = fopen("gallery.txt", 'ab');
-    
-    if(!$fp){ // if fopen fails exit
-        echo '<p><strong> Your order could not be processed. 
-        .Please try again later.</strong></p></body></html>';
-        exit;
-    }
-    
-    // inputs trimed and uppercase
-    $getPhotoName = strtoupper(trim($_POST['photoName']));  
-    $getDateTaken = trim($_POST['dateTaken']); 
-    $getPhotographer = strtoupper(trim($_POST['photographer']));
-    $getLocation = strtoupper(trim($_POST['location']));
-
-    $outputString = $fileName."\t".$getPhotoName."\t".$getDateTaken."\t".$getPhotographer."\t".$getLocation."\n";
+@$db = new mysqli('mariadb', 'cs431s41', 'EeChe9sh', 'cs431s41');
+if (mysqli_connect_errno()) {
+    echo "<p>Error: Cannot connect to database!</p>";
+    exit;
+ }
 	
-	
-    file_put_contents("gallery.txt", $outputString, FILE_APPEND); // append data
-    //May be unncessary, but used rewind() to move the pointer to the start of the file
-    rewind($fp);
-    fclose($fp);
-    ?>
-	
-<?php
-    // Read file and add data to array and show pictures.
-    $fp = fopen("gallery.txt", 'rb');
+//Move the uploaded file into the text file, separated by strings
+if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"],"uploads/".$filename)) {
+//$outputStr = $filename."\t".$name."\t".$date."\t".$photographer."\t".$location."\n";
 
-    if(!$fp){
-        echo 'error reading file!';
-        exit;
-    }
+        $query = "INSERT INTO Images VALUES (?, ?, ?, ?, ?)";
+        $statement = $db->prepare($query);
+        $statement->bind_param('sssss', $filename, $name, $date, $photographer, $location);
+        $statement->execute();
 
-    $galleryarray = [];  //empty array to store information from index.html
-
-    while(!feof($fp)){
-        $lines = fgets($fp); 
-        if($lines === false) {
-             break; // removes empty lines
+        if ($statement->affected_rows > 0) {
+            echo  "<p>Image successfully added.</p>";
+        } else {
+            echo "<p>An error has occurred. Image failed to upload.</p>";
         }
-        $line = explode("\t",$lines); // explodes new line into the array, creating separate variables
-        $temparray = [$line[0],$line[1],$line[2],$line[3],$line[4]]; // push -> array
-        array_push($galleryarray,$temparray);
-    }
 
-    fclose($fp); // close file
+        $db->close(); 
 }
 
+    //Sorting functions for later on. User defined, will compare each value.
+    //Array positions: 0 - Filename. 1 - Name. 2 - Date. 3 - Photographer. 4 - Location.
+
+    function compareName($x, $y) {
+        if (strtolower($x[1]) == strtolower($y[1])) {
+            return 0;
+        } else if (strtolower($x[1]) < strtolower($y[1])) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+    function compareDate($x, $y) {
+        if (strtolower($x[2]) == strtolower($y[2])) {
+            return 0;
+        } else if (strtolower($x[2]) < strtolower($y[2])) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+    function comparePG($x, $y) {
+        if (strtolower($x[3]) == strtolower($y[3])) {
+            return 0;
+        } else if (strtolower($x[3]) < strtolower($y[3])) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+    function compareLocation($x, $y) {
+        if (strtolower($x[4]) == strtolower($y[4])) {
+            return 0;
+        } else if (strtolower($x[4]) < strtolower($y[4])) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
 ?>
 
-<html lang="en" dir="ltr">
+<!DOCTYPE html>
+<html>
 <head>
-<meta charset="utf-8">
-    <title>The Gallery</title>
+    <meta charset="utf-8">
+      <title>The Gallery</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
@@ -96,7 +86,7 @@ if(isset($_POST["submit"])) {
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
 </head>
 <body>
-    <header>
+<header>
         <h1 class="display-5">View All Photos</h1>   
     </header>
     <br>
@@ -125,64 +115,67 @@ if(isset($_POST["submit"])) {
     </table>
 </form>
     <div class="row">
-        <?php
-        $input='name';
-
-if (isset($_POST["ok"])) {
-
-//Here I have gallery.txt be read into $galleryarray as the form gets refreshed...
-$fp = fopen("gallery.txt", 'rb');
-
-    if(!$fp){
-        echo 'Error: Unable to reading file';
-    }
-	
+    <?php
+$input='name';
+if(isset($_POST["ok"])) {
     $input = $_POST["sort"];
-    $galleryarray = [];
-
-    while(!feof($fp)){
-        $lines = fgets($fp); 
-        if($lines === false) {
-             break; // removes empty lines
-        }
-        $line = explode("\t",$lines); // explodes new line into the array, creating separate variables
-        $temparray = [$line[0],$line[1],$line[2],$line[3],$line[4]]; // push -> array
-        array_push($galleryarray,$temparray);
-    }
-    fclose($fp); 
 }
 
-// Sort the array according to which "sort" method the user selected in the dropdown
+// default sort
+$sql = "SELECT * FROM `Images` ORDER BY `name`";
+// Select sql to query
 if($input === 'name'){
-    array_multisort( array_column( $galleryarray, 1),SORT_ASC,  $galleryarray);
+    $sql = "SELECT * FROM `Images` ORDER BY `name`";
 } else if($input === 'date'){
-    array_multisort( array_column( $galleryarray, 2),SORT_ASC, SORT_NUMERIC, $galleryarray);
+    $sql = "SELECT * FROM `Images` ORDER BY `date`";
 } else if($input === 'photographer'){
-    array_multisort( array_column( $galleryarray, 3),SORT_ASC, $galleryarray);
+    $sql = "SELECT * FROM `Images` ORDER BY `photographer`";
 } else if($input === 'location'){
-    array_multisort( array_column( $galleryarray, 4),SORT_ASC, $galleryarray);
+    $sql = "SELECT * FROM `Images` ORDER BY `location`";
+}
+        
+
+@$db = new mysqli('mariadb', 'cs431s41', 'EeChe9sh', 'cs431s41');
+        if (mysqli_connect_errno()) {
+            echo "<p>Error: Cannot connect to database!</p>";
+            exit;
+        }
+
+if(!$db) {
+	die('Could not connect: '.mysql_error());
 }
 
-// Using a for loop and echo data-boxes to display the images on screen in a card format, from bootstrap
-$len = count($galleryarray); // 
-for($row = 0; $row < $len; $row++) {
-echo '<div class ="col-12 col-md-4 mb-5">';
-    echo '<div class="card-deck">';
-       echo '<div class="card" style="width: 18rem;">';
-         echo '<div class="list-content">'; // coming from fileName
-         echo '<div class="card-body">'; 
-           echo'<img class="picture-content card-img-top" src="uploads/'.$galleryarray[$row][0].'"/ alt="Card img cap" style="width:100%;object-fit:cover;"></img>';
-             echo'<p class="data-box card-text">Name: '.$galleryarray[$row][1].'</p>'; // name
-             echo'<p class="data-box card-text">Date: '.$galleryarray[$row][2].'</p>'; // date
-             echo'<p class="data-box card-text">Photographer: '.$galleryarray[$row][3].'</p>'; // photographer
-             echo'<p class="data-box card-text">Location: '.$galleryarray[$row][4].'</p>'; // location
-           echo'</div>';
-         echo'</div>';
-         echo'</div>';
-       echo'</div>';
-    echo'</div>';
-}?>
+
+        $query = "SELECT Filename, Name, Date, Photographer, Location FROM Images";
+        $statement = $db->prepare($query);
+        $statement->execute();
+        $statement->store_result();
+
+        $statement->bind_result($filename, $name, $date, $photographer, $location);
+        
+        echo "<p>Number of images found: ".$statement->num_rows."</p>";
+
+        while($statement->fetch()) {
+             echo '<div class ="col-12 col-md-4 mb-5">';
+             echo '<div class="card-deck">';
+             echo '<div class="card" style="width: 18rem;">';
+             echo '<div class="list-content">'; // coming from fileName
+             echo '<div class="card-body">'; 
+             echo'<img class="picture-content card-img-top" src="uploads/'.$filename .'"/ alt="Card img cap" style="width:100%;object-fit:cover;"></img>';
+             echo'<p class="data-box card-text">Name: '.$name.'</p>'; // name
+             echo'<p class="data-box card-text">Date: '.$date.'</p>'; // date
+             echo'<p class="data-box card-text">Photographer: '.$photographer.'</p>'; // photographer
+             echo'<p class="data-box card-text">Location: '.$location.'</p>'; // location
+             echo'</div>';
+             echo'</div>';
+             echo'</div>';
+             echo'</div>';
+             echo'</div>';
+        }
+        $statement->free_result();
+        $db->close();
+    ?>
 </div>
-</main>
 </body>
 </html>
+
