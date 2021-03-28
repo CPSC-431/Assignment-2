@@ -1,6 +1,4 @@
-# Assignment-2
-
-# CPSC 431 - Assignment 1
+# CPSC 431 - Assignment-2
 
 ## Team members:
 - Sagar Joshi | CWID: 805532256
