@@ -1,4 +1,6 @@
+<!DOCTYPE html>
 <?php
+// slightly changed from Assignment 1, but pretty similar
 $tmp_name = "temp"; 
 $name = $_POST['photoName'];
 $date = $_POST['dateTaken'];
@@ -6,37 +8,35 @@ $photographer = $_POST['photographer'];
 $location = $_POST['location'];
 $choice = $_GET['choice']; 
 $filename = $_FILES["fileToUpload"]["name"];
-$imgType = $_FILES["fileToUpload"]["type"];
-$errorImg = False;
+$imageFileType = $_FILES["fileToUpload"]["type"];
+$errorImageUpload = False;
 
+// connecting to the database, if statement just states what happens if unable to
 @$db = new mysqli('mariadb', 'cs431s41', 'EeChe9sh', 'cs431s41');
 if (mysqli_connect_errno()) {
     echo "<p>Error: Cannot connect to database!</p>";
     exit;
  }
 	
-//Move the uploaded file into the text file, separated by strings
+// This moves the information to the database, collecting the uploads information
 if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"],"uploads/".$filename)) {
-//$outputStr = $filename."\t".$name."\t".$date."\t".$photographer."\t".$location."\n";
-
         $query = "INSERT INTO Images VALUES (?, ?, ?, ?, ?)";
+        // prepare and bind
         $statement = $db->prepare($query);
         $statement->bind_param('sssss', $filename, $name, $date, $photographer, $location);
         $statement->execute();
 
         if ($statement->affected_rows > 0) {
-            echo  "<p>Image successfully added.</p>";
+            echo  "<p>Image successfully included to the database.</p>";
         } else {
-            echo "<p>An error has occurred. Image failed to upload.</p>";
+            echo "<p>An error has occurred. Image failed to upload into the database. Please try again</p>";
         }
 
         $db->close(); 
 }
 
-    //Sorting functions for later on. User defined, will compare each value.
-    //Array positions: 0 - Filename. 1 - Name. 2 - Date. 3 - Photographer. 4 - Location.
-
-    function compareName($x, $y) {
+    //Array positions (in order as it is in phpMyAdmin): 0 - Filename. 1 - Name. 2 - Date. 3 - Photographer. 4 - Location.
+    function nameData($x, $y) {
         if (strtolower($x[1]) == strtolower($y[1])) {
             return 0;
         } else if (strtolower($x[1]) < strtolower($y[1])) {
@@ -45,7 +45,7 @@ if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"],"uploads/".$filename)
             return 1;
         }
     }
-    function compareDate($x, $y) {
+    function dateData($x, $y) {
         if (strtolower($x[2]) == strtolower($y[2])) {
             return 0;
         } else if (strtolower($x[2]) < strtolower($y[2])) {
@@ -54,7 +54,7 @@ if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"],"uploads/".$filename)
             return 1;
         }
     }
-    function comparePG($x, $y) {
+    function photographerData($x, $y) {
         if (strtolower($x[3]) == strtolower($y[3])) {
             return 0;
         } else if (strtolower($x[3]) < strtolower($y[3])) {
@@ -63,7 +63,7 @@ if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"],"uploads/".$filename)
             return 1;
         }
     }
-    function compareLocation($x, $y) {
+    function locationData($x, $y) {
         if (strtolower($x[4]) == strtolower($y[4])) {
             return 0;
         } else if (strtolower($x[4]) < strtolower($y[4])) {
@@ -74,11 +74,10 @@ if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"],"uploads/".$filename)
     }
 ?>
 
-<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-      <title>The Gallery</title>
+    <title>The Gallery</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
@@ -121,7 +120,7 @@ if(isset($_POST["ok"])) {
     $input = $_POST["sort"];
 }
 
-// default sort
+// sorting method
 $sql = "SELECT * FROM `Images` ORDER BY `name`";
 // Select sql to query
 if($input === 'name'){
@@ -134,7 +133,7 @@ if($input === 'name'){
     $sql = "SELECT * FROM `Images` ORDER BY `location`";
 }
         
-
+// connecting to the database, if statement just states what happens if unable to
 @$db = new mysqli('mariadb', 'cs431s41', 'EeChe9sh', 'cs431s41');
         if (mysqli_connect_errno()) {
             echo "<p>Error: Cannot connect to database!</p>";
@@ -142,7 +141,7 @@ if($input === 'name'){
         }
 
 if(!$db) {
-	die('Could not connect: '.mysql_error());
+    die('Unable to connect to the database: '.mysql_error());
 }
 
 
@@ -153,13 +152,12 @@ if(!$db) {
 
         $statement->bind_result($filename, $name, $date, $photographer, $location);
         
-        echo "<p>Number of images found: ".$statement->num_rows."</p>";
-
+        // takes information from the database and pastes in on the webpage
         while($statement->fetch()) {
              echo '<div class ="col-12 col-md-4 mb-5">';
              echo '<div class="card-deck">';
              echo '<div class="card" style="width: 18rem;">';
-             echo '<div class="list-content">'; // coming from fileName
+             echo '<div class="list-content">'; 
              echo '<div class="card-body">'; 
              echo'<img class="picture-content card-img-top" src="uploads/'.$filename .'"/ alt="Card img cap" style="width:100%;object-fit:cover;"></img>';
              echo'<p class="data-box card-text">Name: '.$name.'</p>'; // name
@@ -178,4 +176,3 @@ if(!$db) {
 </div>
 </body>
 </html>
-
