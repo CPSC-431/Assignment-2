@@ -6,7 +6,7 @@ $name = $_POST['photoName'];
 $date = $_POST['dateTaken'];
 $photographer = $_POST['photographer'];
 $location = $_POST['location'];
-$choice = $_GET['choice']; 
+$input = $_GET['choice']; 
 $filename = $_FILES["fileToUpload"]["name"];
 $imageFileType = $_FILES["fileToUpload"]["type"];
 $errorImageUpload = False;
@@ -90,13 +90,13 @@ if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"],"uploads/".$filename)
     </header>
     <br>
 
-<form action = "gallery.php" method="post" enctype="multipart/form-data">
+<form action = "gallery.php" method="GET" enctype="multipart/form-data">
     <table> 
         <tr> 
             <td> 
             <div class="form-group">
                 <h2 class="display-5">Sort By:</h2>
-                <select id="sortby" class="form-control" name="sort">
+                <select id="sortby" class="form-control" name="choice">
                     <option value="name">Name</option>
                     <option value="date">Date</option>
                     <option value="photographer">Photographer</option>
@@ -113,39 +113,31 @@ if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"],"uploads/".$filename)
         </tr>
     </table>
 </form>
-    <div class="row">
-    <?php
-$input='name';
-if(isset($_POST["ok"])) {
-    $input = $_POST["sort"];
-}
+<div class="row">
+<?php
 
-// sorting method
-$sql = "SELECT * FROM `Images` ORDER BY `name`";
-// Select sql to query
-if($input === 'name'){
-    $sql = "SELECT * FROM `Images` ORDER BY `Name`";
-} else if($input === 'date'){
-    $sql = "SELECT * FROM `Images` ORDER BY `Date`";
-} else if($input === 'photographer'){
-    $sql = "SELECT * FROM `Images` ORDER BY `Photographer`";
-} else if($input === 'location'){
-    $sql = "SELECT * FROM `Images` ORDER BY `Location`";
-}
-        
 // connecting to the database, if statement just states what happens if unable to
 @$db = new mysqli('mariadb', 'cs431s41', 'EeChe9sh', 'cs431s41');
         if (mysqli_connect_errno()) {
             echo "<p>Error: Cannot connect to database!</p>";
             exit;
-        }
-
-if(!$db) {
-    die('Unable to connect to the database: '.mysql_error());
 }
 
+// sorting method
+$query = "SELECT Filename, Name, Date, Photographer, Location FROM Images";
+if ($input == "name") {
+                $query = "SELECT Filename, Name, Date, Photographer, Location FROM Images ORDER BY Name";
+}
+else if ($input == "date") {
+                $query = "SELECT Filename, Name, Date, Photographer, Location FROM Images ORDER BY Date";
+}
+else if ($input == "photographer") {               
+                $query = "SELECT Filename, Name, Date, Photographer, Location FROM Images ORDER BY Photographer";
+}
+else if ($input == "location") {
+                $query = "SELECT Filename, Name, Date, Photographer, Location FROM Images ORDER BY Location";
+}
 
-        $query = "SELECT Filename, Name, Date, Photographer, Location FROM Images";
         $statement = $db->prepare($query);
         $statement->execute();
         $statement->store_result();
@@ -176,3 +168,4 @@ if(!$db) {
 </div>
 </body>
 </html>
+
