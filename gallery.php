@@ -124,13 +124,13 @@ if(isset($_POST["ok"])) {
 $sql = "SELECT * FROM `Images` ORDER BY `name`";
 // Select sql to query
 if($input === 'name'){
-    $sql = "SELECT * FROM `Images` ORDER BY `name`";
+    $sql = "SELECT * FROM `Images` ORDER BY `Name`";
 } else if($input === 'date'){
-    $sql = "SELECT * FROM `Images` ORDER BY `date`";
+    $sql = "SELECT * FROM `Images` ORDER BY `Date`";
 } else if($input === 'photographer'){
-    $sql = "SELECT * FROM `Images` ORDER BY `photographer`";
+    $sql = "SELECT * FROM `Images` ORDER BY `Photographer`";
 } else if($input === 'location'){
-    $sql = "SELECT * FROM `Images` ORDER BY `location`";
+    $sql = "SELECT * FROM `Images` ORDER BY `Location`";
 }
         
 // connecting to the database, if statement just states what happens if unable to
